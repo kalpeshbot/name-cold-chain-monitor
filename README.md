@@ -1,238 +1,224 @@
-# 🌡️ Cold Chain Monitor
+# Cold Chain Compliance Monitor
 
-> **Real-time IoT + ML system that predicts pharmaceutical temperature excursions before they happen.**
-
-![Python](https://img.shields.io/badge/Python-3.11-blue?style=flat-square&logo=python)
-![TensorFlow](https://img.shields.io/badge/TensorFlow-2.16-orange?style=flat-square&logo=tensorflow)
-![MQTT](https://img.shields.io/badge/MQTT-HiveMQ-green?style=flat-square)
-![License](https://img.shields.io/badge/License-MIT-purple?style=flat-square)
-![Status](https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square)
+**End-to-end IoT and ML pipeline for pharmaceutical drug shipment temperature integrity monitoring.**
 
 ---
 
-## 🎯 Problem Statement
+## Overview
 
-Pharmaceutical drugs like vaccines, insulin, and blood samples require strict temperature control (2°C – 8°C) during transport. A single temperature excursion can destroy an entire shipment worth lakhs of rupees.
+The Cold Chain Compliance Monitor is a production-grade embedded system designed to ensure the integrity of temperature-sensitive pharmaceutical shipments during transit. The system combines hardware sensor nodes, real-time ML anomaly detection, and automated WHO/GDP-compliant audit report generation into a single unified pipeline.
 
-**Current systems only DETECT problems AFTER they happen — too late.**
-
----
-
-## 💡 Solution
-
-An end-to-end IoT + ML pipeline that:
-- 📡 Monitors drug shipments every 30 seconds via ESP32 sensors
-- 🧠 Predicts temperature excursions **10-15 minutes before** they happen
-- 🚨 Sends instant Telegram alerts with GPS location and spoilage probability
-- 📄 Auto-generates WHO/GDP compliant PDF audit reports per delivery
-- 📊 Renders a full matplotlib monitoring dashboard
+Unlike traditional monitoring systems that detect excursions after the fact, this system predicts temperature violations before they occur — enabling proactive intervention and preventing spoilage.
 
 ---
 
-## 🏗️ System Architecture
-ESP32 (DS18B20 + SHT31 + GPS + Reed Switch)
-↓ MQTT every 30 seconds
-AWS IoT Core / HiveMQ Broker
-↓ streams to
-Python MQTT Subscriber (mqtt_subscriber.py)
-↓ feeds into
-LSTM Autoencoder (train_lstm.py + detect_anomaly.py)
-↓ triggers
-Telegram Alert Bot (alert_bot.py)
-↓ generates
-PDF Audit Report (generate_report.py)
-↓ visible on
-Matplotlib Dashboard (visualize.py)
+## Problem Statement
+
+Pharmaceutical drugs including vaccines, insulin, and biological samples require strict temperature control between 2 degrees Celsius and 8 degrees Celsius during transport. A single undetected temperature excursion can render an entire shipment unusable, resulting in significant financial loss and potential patient safety risks. Existing systems are reactive — they log data but do not predict or prevent excursions in real time.
 
 ---
 
-## 📁 Project Structure
-cold-chain-monitor/
-├── config.py
-├── requirements.txt
-├── firmware/
-│   └── esp32_cold_chain.ino
-├── data/
-│   ├── simulate_data.py
-│   └── sample_data.csv
-├── ml/
-│   ├── train_lstm.py
-│   ├── detect_anomaly.py
-│   └── model/
-│       ├── lstm_model.keras
-│       ├── scaler.pkl
-│       └── threshold.pkl
-├── backend/
-│   ├── mqtt_subscriber.py
-│   ├── alert_bot.py
-│   └── generate_report.py
-├── dashboard/
-│   └── visualize.py
-├── reports/
-│   ├── SHIPMENT_1234_report.pdf
-│   └── dashboard.png
-└── logs/
-├── mqtt_log.txt
-└── alert_log.txt
+## Solution Architecture
 
----
-
-## 🚀 Quickstart
-
-### 1. Clone the repository
-```bash
-git clone https://github.com/kalpeshbot/cold-chain-monitor-
-cd cold-chain-monitor-
 ```
-
-### 2. Install dependencies
-```bash
-pip install -r requirements.txt
-```
-
-### 3. Configure credentials
-Open config.py and set:
-```python
-TELEGRAM_BOT_TOKEN = "your_bot_token_here"
-TELEGRAM_CHAT_ID   = "your_chat_id_here"
-```
-
-### 4. Generate simulated sensor data
-```bash
-python data/simulate_data.py
-```
-
-### 5. Train the LSTM model
-```bash
-python ml/train_lstm.py
-```
-
-### 6. Run anomaly detection
-```bash
-python ml/detect_anomaly.py
-```
-
-### 7. Simulate live MQTT stream
-```bash
-python backend/mqtt_subscriber.py
-```
-
-### 8. Send Telegram alerts
-```bash
-python backend/alert_bot.py
-```
-
-### 9. Generate PDF audit report
-```bash
-python backend/generate_report.py
-```
-
-### 10. Launch dashboard
-```bash
-python dashboard/visualize.py
+ESP32 Sensor Node
+      |
+      | (MQTT over LTE-M)
+      v
+AWS IoT Core
+      |
+      v
+MQTT Subscriber (Python)
+      |
+      |--- InfluxDB (Time Series Storage)
+      |
+      v
+LSTM Autoencoder (Anomaly Detection)
+      |
+      |--- Telegram Bot (Real-time Alerts)
+      |--- PDF Report Generator (WHO/GDP Compliance)
+      v
+Grafana Dashboard (Live Visualization)
 ```
 
 ---
 
-## 🧠 ML Model — LSTM Autoencoder
+## Features
 
-| Component | Detail |
-|-----------|--------|
-| Architecture | LSTM Autoencoder (Encoder-Decoder) |
-| Input | 20 timestep sequences (temperature, humidity, spoilage) |
-| Encoder | LSTM(64) → LSTM(32) → RepeatVector(20) |
-| Decoder | LSTM(32) → LSTM(64) → TimeDistributed(Dense(3)) |
-| Loss | Mean Absolute Error (MAE) |
-| Training data | Normal readings only (2°C – 8°C) |
-| Anomaly trigger | Reconstruction error > learned threshold |
-| Prediction window | 10–15 minutes ahead |
-
----
-
-## 📊 Dashboard Panels
-
-| Panel | Description |
-|-------|-------------|
-| KPI Header | Avg temp, peak temp, compliance %, alerts, spoilage risk |
-| Temperature Timeline | Normal vs anomaly vs alert zones with safe band |
-| Spoilage Probability | ML-derived risk over time with warning/critical lines |
-| Humidity Timeline | With door open event markers |
-| Reconstruction Error | LSTM MAE with anomaly threshold line |
-| GPS Route Map | Color-coded by temperature with alert zones |
-| Compliance Score | Over time with pass/fail threshold |
-| Delivery Summary | Full stats table with color-coded status |
+- Real-time temperature and humidity monitoring via DS18B20 and SHT31 sensors
+- GPS-based location tracking correlated with temperature events
+- Door open and close event detection via reed switch
+- LSTM Autoencoder anomaly detection running on incoming sensor data
+- Predictive excursion alerts sent 10 to 15 minutes before threshold breach
+- Spoilage probability score calculated per shipment
+- Offline buffering with automatic data replay on network reconnect
+- Auto-generated WHO/GDP-compliant PDF audit reports per delivery
+- QR code per shipment linking to full audit trail
+- Telegram Bot alerts with location, temperature, and recommended action
+- Grafana dashboard with live temperature graphs and GPS route maps
 
 ---
 
-## 📄 PDF Report Sections
-
-1. Shipment Information
-2. Compliance Summary (PASS / FAIL)
-3. Temperature Summary
-4. Humidity and Door Events
-5. Anomaly Detection Results (top 10)
-6. Digital Signature and Audit Hash
-
----
-
-## 🌡️ Compliance Standards Met
-
-| Standard | Description |
-|----------|-------------|
-| WHO GDP | Good Distribution Practice |
-| SCHEDULE M | Indian Pharmaceutical Standard |
-| ICH Q1A | Stability Guidelines |
-| USP 1079 | Good Storage and Distribution Practices |
-
----
-
-## 💰 Real World Impact
-
-| Metric | Value |
-|--------|-------|
-| Indian cold chain market | $700M+ |
-| Shipments lost to excursions | ~20% |
-| Estimated loss reduction | 15–20% |
-| Savings per truck per year | ₹50,000 – ₹2,00,000 |
-
----
-
-## 🛠️ Hardware Reference
+## Hardware Components
 
 | Component | Purpose |
 |-----------|---------|
 | ESP32 | Main microcontroller |
-| DS18B20 | Temperature sensor |
-| SHT31 | Humidity sensor |
-| NEO-6M | GPS tracking |
+| DS18B20 | Temperature sensing |
+| SHT31 | Humidity sensing |
+| NEO-6M GPS Module | Location tracking |
 | Reed Switch | Door open/close detection |
 | LTE-M Module | Cellular connectivity |
 
-Hardware implementation is in firmware/esp32_cold_chain.ino
-For software-only demo, all hardware is simulated via data/simulate_data.py
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Firmware | C++, Arduino IDE, FreeRTOS |
+| Protocol | MQTT |
+| Cloud | AWS IoT Core |
+| Streaming | Apache Kafka |
+| Database | InfluxDB, TimescaleDB |
+| ML | Python, TensorFlow, LSTM Autoencoder |
+| Backend | FastAPI, Docker |
+| Alerts | Telegram Bot API |
+| Reports | ReportLab (PDF) |
+| Dashboard | Grafana |
 
 ---
 
-## 📦 Dependencies
+## Project Structure
 
-| Library | Version | Purpose |
-|---------|---------|---------|
-| tensorflow | 2.16.1 | LSTM Autoencoder |
-| pandas | 2.2.2 | Data processing |
-| numpy | 1.26.4 | Numerical computing |
-| matplotlib | 3.8.4 | Dashboard rendering |
-| fpdf2 | 2.7.9 | PDF report generation |
-| scikit-learn | 1.4.2 | Data scaling |
-| requests | 2.31.0 | Telegram API |
-| paho-mqtt | 2.0.0 | MQTT protocol |
-| python-dotenv | 1.0.1 | Environment config |
+```
+cold-chain-monitor/
+├── firmware/
+│   └── esp32_cold_chain.ino       # ESP32 sensor + MQTT firmware
+├── ml/
+│   ├── train_lstm.py              # LSTM Autoencoder training
+│   ├── detect_anomaly.py          # Real-time anomaly detection
+│   └── model/                     # Saved model weights
+├── backend/
+│   ├── mqtt_subscriber.py         # MQTT data ingestion
+│   ├── alert_bot.py               # Telegram alert system
+│   └── generate_report.py         # WHO/GDP PDF report generator
+├── dashboard/
+│   └── visualize.py               # Grafana / matplotlib dashboard
+├── data/
+│   └── sample_data.csv            # Sample sensor data for testing
+├── requirements.txt
+└── README.md
+```
 
 ---
 
-## 📜 License
+## Getting Started
 
-MIT License — free to use, modify, and distribute.
+### Prerequisites
+
+- Python 3.11 or above
+- Arduino IDE 2.0
+- Docker Desktop
+- AWS account with IoT Core enabled
+- Telegram Bot token
+
+### Installation
+
+Clone the repository:
+
+```bash
+git clone https://github.com/kalpeshbuilds/cold-chain-monitor.git
+cd cold-chain-monitor
+```
+
+Install Python dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+Flash the ESP32 firmware:
+
+1. Open `firmware/esp32_cold_chain.ino` in Arduino IDE
+2. Configure your WiFi credentials and MQTT broker endpoint in the config section
+3. Flash to ESP32 via USB
+
+### Running the Backend
+
+```bash
+python backend/mqtt_subscriber.py
+```
+
+### Running Anomaly Detection
+
+```bash
+python ml/detect_anomaly.py
+```
+
+### Running the Alert Bot
+
+```bash
+python backend/alert_bot.py
+```
 
 ---
 
-*Cold Chain Monitor v1.0 — Protecting lives through intelligent temperature monitoring.*
+## ML Model
+
+The anomaly detection engine uses an LSTM Autoencoder trained on historical normal temperature data (2 degrees Celsius to 8 degrees Celsius range). The model learns the expected patterns of temperature and humidity over time. During inference, reconstruction error is calculated on incoming sensor windows — a high reconstruction error indicates an anomaly.
+
+Excursion prediction works by fitting a trend line over the last 10 sensor readings and projecting the temperature value 10 to 15 minutes ahead. If the projected value exceeds the threshold, an alert is triggered before the actual excursion occurs.
+
+---
+
+## Compliance Standards
+
+This system is designed with reference to the following regulatory standards:
+
+- WHO Good Distribution Practice (GDP)
+- Schedule M — Indian Pharmaceutical Standards
+- ICH Q1A Stability Guidelines
+- USP 1079 Good Storage and Shipping Practices
+
+---
+
+## Sample Alert Format
+
+```
+COLD CHAIN ALERT — Shipment #1234
+
+Status   : Temperature Rising
+Current  : 7.4 degrees Celsius
+Predicted: 8.3 degrees Celsius in 12 minutes
+Humidity : 68%
+Location : NH-44, Km 234, Andhra Pradesh
+Door     : Opened 3 times in last 30 minutes
+
+Recommended Action: Inspect vehicle cooling unit immediately.
+```
+
+---
+
+## Future Improvements
+
+- Multi-node support for fleet-level monitoring
+- Weather API integration for route risk scoring
+- Driver behavior scoring based on door open patterns and vehicle speed
+- Mobile application for logistics managers
+- Blockchain-based immutable audit trail
+
+---
+
+## Author
+
+**Kalpesh V L**
+IoT Engineer and ML Systems Builder
+VIT-AP University, CSE 2028
+linkedin.com/in/kalpeshbuilds
+
+---
+
+## License
+
+This project is licensed under the MIT License.
